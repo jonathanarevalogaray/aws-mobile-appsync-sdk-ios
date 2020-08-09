@@ -53,18 +53,25 @@ public final class AWSMutationCache {
     internal func saveMutationRecord(record: AWSAppSyncMutationRecord) -> Promise<Void> {
         return Promise {
             AppSyncLog.verbose("\(record.recordIdentifier): saving")
-            if let s3Object = record.s3ObjectInput {
-                let insert = mutationRecords.insert(
-                    recordIdentifier <- record.recordIdentifier,
-                    data <- record.data!,
-                    recordState <- record.recordState.rawValue,
-                    timestamp <- record.timestamp,
-                    s3Bucket <- s3Object.bucket,
-                    s3Key <- s3Object.key,
-                    s3Region <- s3Object.region,
-                    s3LocalUri <- s3Object.localUri,
-                    s3MimeType <- s3Object.mimeType,
-                    operationString <- record.operationString!)
+            
+            if let s3Objects = record.s3ObjectInput {
+                /// S3 arguments
+                let keys = s3Objects.map({ $0.key }).joined(separator: ",")
+                let uris = s3Objects.map({ $0.localUri }).joined(separator: ",")
+                let bucket = s3Objects.first?.bucket ?? ""
+                let region = s3Objects.first?.region ?? ""
+                let mimeType = s3Objects.first?.mimeType ?? ""
+                
+                let insert = mutationRecords.insert(recordIdentifier <- record.recordIdentifier,
+                                                    data <- record.data!,
+                                                    recordState <- record.recordState.rawValue,
+                                                    timestamp <- record.timestamp,
+                                                    s3Bucket <- bucket,
+                                                    s3Key <- keys,
+                                                    s3Region <- region,
+                                                    s3LocalUri <- uris,
+                                                    s3MimeType <- mimeType,
+                                                    operationString <- record.operationString!)
                 try db.run(insert)
             } else {
                 let insert = mutationRecords.insert(
@@ -123,12 +130,9 @@ public final class AWSMutationCache {
                             let mimeType = try record.get(s3MimeType) {
 
                             mutationRecord.type = .graphQLMutationWithS3Object
-                            mutationRecord.s3ObjectInput = InternalS3ObjectDetails(
-                                bucket: bucket,
-                                key: key,
-                                region: region,
-                                mimeType: mimeType,
-                                localUri: localUri)
+                            let keys = key.components(separatedBy: ",")
+                            let uris = localUri.components(separatedBy: ",")
+                            mutationRecord.s3ObjectInput = keys.enumerated().map({ InternalS3ObjectDetails(bucket: bucket, key: $0.element, region: region, mimeType: mimeType, localUri: uris[$0.offset]) })
                         }
                     } catch {
                         AppSyncLog.error("Failed to retrieve S3Object from mutation record \(mutationRecord.recordIdentifier): \(error)")

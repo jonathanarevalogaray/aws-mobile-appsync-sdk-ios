@@ -15,6 +15,7 @@ final class CachedMutationOperation: AsynchronousOperation, Cancellable {
     var currentAttemptNumber = 1
     var mutationNextStep: MutationState = .unknown
     var mutationRetryNotifier: AWSMutationRetryNotifier?
+    private var uploadCount: Int = -1
 
     var operationCompletionBlock: ((CachedMutationOperation, Error?) -> Void)?
 
@@ -29,6 +30,7 @@ final class CachedMutationOperation: AsynchronousOperation, Cancellable {
         self.handlerQueue = handlerQueue
         self.mutation = mutation
         super.init()
+        self.uploadCount += mutation.s3ObjectInput?.count ?? 0
         resolveInitialMutationState()
     }
 
@@ -37,7 +39,7 @@ final class CachedMutationOperation: AsynchronousOperation, Cancellable {
     }
     
     private func resolveInitialMutationState() {
-        if mutation.s3ObjectInput != nil {
+        if mutation.s3ObjectInput != nil && self.uploadCount > -1 {
             mutationNextStep = .s3Upload
         } else {
             mutationNextStep = .graphqlOperation
@@ -65,12 +67,23 @@ final class CachedMutationOperation: AsynchronousOperation, Cancellable {
         }
         switch mutationNextStep {
         case .s3Upload:
-            appSyncClient.s3ObjectManager?.upload(s3Object: mutation.s3ObjectInput!) { [weak self, mutation] success, error in
+            guard mutation.s3ObjectInput != nil && self.uploadCount > -1 else {
+                self.mutationNextStep = .graphqlOperation
+                self.send(mutation, completion: completion)
+                return
+            }
+            appSyncClient.s3ObjectManager?.upload(s3Object: ((mutation.s3ObjectInput?[self.uploadCount])!)) { [weak self, mutation] success, error in
                 if success {
-                    // If the complex object upload goes through, we set the next step to be graphql operation
-                    // and then send the graphql mutation request over wire.
-                    self?.mutationNextStep = .graphqlOperation
-                    self?.send(mutation, completion: completion)
+                    self?.uploadCount -= 1
+                    if self != nil, self!.uploadCount > -1 {
+                        self?.mutationNextStep = .s3Upload
+                        self?.performMutation()
+                    } else {
+                        // If the complex object upload goes through, we set the next step to be graphql operation
+                        // and then send the graphql mutation request over wire.
+                        self?.mutationNextStep = .graphqlOperation
+                        self?.send(mutation, completion: completion)
+                    }
                 } else {
                     if let error = error, AWSMutationRetryAdviceHelper.isRetriableNetworkError(error: error) {
                         // If the error retriable, do not mark the operation as completed; schedule a retry.

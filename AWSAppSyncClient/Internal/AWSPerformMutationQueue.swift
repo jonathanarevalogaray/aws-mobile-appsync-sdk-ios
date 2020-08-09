@@ -138,9 +138,9 @@ final class AWSPerformMutationQueue {
 
         let offlineMutation = AWSAppSyncMutationRecord()
 
-        if let s3Object = AWSRequestBuilder.s3Object(from: mutation.variables) {
+        if let s3Objects = AWSRequestBuilder.s3Objects(variables: mutation.variables) {
             offlineMutation.type = .graphQLMutationWithS3Object
-            offlineMutation.s3ObjectInput = s3Object
+            offlineMutation.s3ObjectInput = s3Objects
         }
 
         offlineMutation.data = data

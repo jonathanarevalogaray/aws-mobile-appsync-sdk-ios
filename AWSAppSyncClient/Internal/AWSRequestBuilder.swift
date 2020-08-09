@@ -41,4 +41,45 @@ final class AWSRequestBuilder {
             "query": type(of: operation).requestString,
             "variables": operation.variables]
     }
+    
+    static func s3Objects(variables: GraphQLMap?) -> [InternalS3ObjectDetails]? {
+        let compiler: (GraphQLMap) -> InternalS3ObjectDetails? = { object in
+            AWSRequestBuilder.s3Object(from: object)
+        }
+        if let variables = variables {
+            for key in variables.keys {
+                if let objects = variables[key] as? GraphQLMapConvertible {
+                    let objs = objects.graphQLMap.compactMap({ (key, value) -> [InternalS3ObjectDetails]? in
+                        if let value = value as? [GraphQLMapConvertible] {
+                            let s3 = value.compactMap({compiler($0.graphQLMap)})
+                            return s3
+                        } else if let value = value as? GraphQLMapConvertible {
+                            if let s3 = compiler(value.graphQLMap) {
+                                return [s3]
+                            }
+                        }
+                        return nil
+                    })
+                    return objs.flatMap({$0})
+                } else if let nestedObjects = variables[key] as? [GraphQLMapConvertible] {
+                    let objs = nestedObjects.compactMap { (mapConvertible) -> [InternalS3ObjectDetails]? in
+                        return mapConvertible.graphQLMap.compactMap { (key, value ) -> [InternalS3ObjectDetails]? in
+                            if let value = value as? [GraphQLMapConvertible] {
+                                let s3 = value.compactMap({compiler($0.graphQLMap)})
+                                return s3
+                            } else if let value = value as? GraphQLMapConvertible {
+                                if let s3 = compiler(value.graphQLMap) {
+                                    return [s3]
+                                }
+                            }
+                            return nil
+                        }.flatMap({$0})
+                    }
+                    return objs.flatMap({$0})
+                }
+                return nil
+            }
+        }
+        return nil
+    }
 }

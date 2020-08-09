@@ -16,6 +16,7 @@ final class SessionMutationOperation<Mutation: GraphQLMutation>: AsynchronousOpe
     var currentAttemptNumber = 1
     var mutationNextStep: MutationState = .unknown
     var mutationRetryNotifier: AWSMutationRetryNotifier?
+    private var uploadCount: Int = -1
 
     private var networkTask: Cancellable?
 
@@ -34,6 +35,7 @@ final class SessionMutationOperation<Mutation: GraphQLMutation>: AsynchronousOpe
         self.mutationConflictHandler = mutationConflictHandler
         self.mutationResultHandler = mutationResultHandler
         super.init()
+        self.uploadCount += (AWSRequestBuilder.s3Objects(variables: mutation.variables)?.count ?? 0)
         resolveInitialMutationState()
     }
 
@@ -42,7 +44,7 @@ final class SessionMutationOperation<Mutation: GraphQLMutation>: AsynchronousOpe
     }
     
     private func resolveInitialMutationState() {
-        if AWSRequestBuilder.s3Object(from: mutation.variables) != nil {
+        if AWSRequestBuilder.s3Objects(variables: mutation.variables) != nil && self.uploadCount > -1 {
             mutationNextStep = .s3Upload
         } else {
             mutationNextStep = .graphqlOperation
@@ -58,8 +60,17 @@ final class SessionMutationOperation<Mutation: GraphQLMutation>: AsynchronousOpe
         
         switch mutationNextStep {
         case .s3Upload:
+            guard let s3Objects = AWSRequestBuilder.s3Objects(variables: mutation.variables), self.uploadCount > -1 else {
+                self.mutationNextStep = .graphqlOperation
+                self.networkTask = self.performGraphQLMutation(resultHandler)
+                return nil
+            }
+            
+            print("Session Mutation Operation: \(identifier ?? "(unidentified)")\nSending upload \((s3Objects.count - self.uploadCount))/\(s3Objects.count)")
+            
             appSyncClient.performS3ObjectUploadForMutation(operation: mutation,
-                                                           s3Object: AWSRequestBuilder.s3Object(from: mutation.variables)!) { (error) in
+                                                           s3Object: s3Objects[self.uploadCount]) { (error) in
+                                                            
             if let error = error, AWSMutationRetryAdviceHelper.isRetriableNetworkError(error: error) {
                 // If the error retriable, do not mark the operation as completed; schedule a retry.
                 self.scheduleRetry()
@@ -67,10 +78,16 @@ final class SessionMutationOperation<Mutation: GraphQLMutation>: AsynchronousOpe
                 // if the complex object error is not retriable, we callback the developer
                 resultHandler?(nil, error)
             } else {
-                // If the complex object upload goes through, we set the next step to be graphql operation
-                // and then send the graphql mutation request over wire.
-                self.mutationNextStep = .graphqlOperation
-                self.networkTask = self.performGraphQLMutation(resultHandler)
+                self.uploadCount -= 1
+                
+                if self.uploadCount > -1 {
+                    self.mutationNextStep = .s3Upload
+                    self.performMutation()
+                } else {
+                    // If the complex object upload goes through, we set the next step to be graphql operation
+                    // and then send the graphql mutation request over wire.
+                    self.networkTask = self.performGraphQLMutation(resultHandler)
+                }
             }
         }
         case .graphqlOperation:

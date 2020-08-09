@@ -14,7 +14,7 @@ final class AWSAppSyncMutationRecord {
     var recordState: MutationRecordState = .inQueue
     var timestamp: Date
     var type: MutationType
-    var s3ObjectInput: InternalS3ObjectDetails?
+    var s3ObjectInput: [InternalS3ObjectDetails]?
     var operationString: String?
 
     init(
