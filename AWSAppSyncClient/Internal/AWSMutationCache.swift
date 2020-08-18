@@ -54,7 +54,7 @@ public final class AWSMutationCache {
         return Promise {
             AppSyncLog.verbose("\(record.recordIdentifier): saving")
             
-            if let s3Objects = record.s3ObjectInput {
+            if let s3Objects = record.s3ObjectInput, !s3Objects.isEmpty {
                 /// S3 arguments
                 let keys = s3Objects.map({ $0.key }).joined(separator: ",")
                 let uris = s3Objects.map({ $0.localUri }).joined(separator: ",")
