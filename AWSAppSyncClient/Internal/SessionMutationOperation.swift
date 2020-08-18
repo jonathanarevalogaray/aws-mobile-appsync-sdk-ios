@@ -16,7 +16,7 @@ final class SessionMutationOperation<Mutation: GraphQLMutation>: AsynchronousOpe
     var currentAttemptNumber = 1
     var mutationNextStep: MutationState = .unknown
     var mutationRetryNotifier: AWSMutationRetryNotifier?
-    private var uploadCount: Int = -1
+    private var uploadCount: Int = 0
 
     private var networkTask: Cancellable?
 
@@ -44,7 +44,7 @@ final class SessionMutationOperation<Mutation: GraphQLMutation>: AsynchronousOpe
     }
     
     private func resolveInitialMutationState() {
-        if AWSRequestBuilder.s3Objects(variables: mutation.variables) != nil && self.uploadCount > -1 {
+        if AWSRequestBuilder.s3Objects(variables: mutation.variables) != nil && self.uploadCount > 0 {
             mutationNextStep = .s3Upload
         } else {
             mutationNextStep = .graphqlOperation
@@ -60,7 +60,7 @@ final class SessionMutationOperation<Mutation: GraphQLMutation>: AsynchronousOpe
         
         switch mutationNextStep {
         case .s3Upload:
-            guard let s3Objects = AWSRequestBuilder.s3Objects(variables: mutation.variables), self.uploadCount > -1 else {
+            guard let s3Objects = AWSRequestBuilder.s3Objects(variables: mutation.variables), self.uploadCount > 0 else {
                 self.mutationNextStep = .graphqlOperation
                 self.networkTask = self.performGraphQLMutation(resultHandler)
                 return nil
@@ -80,7 +80,7 @@ final class SessionMutationOperation<Mutation: GraphQLMutation>: AsynchronousOpe
             } else {
                 self.uploadCount -= 1
                 
-                if self.uploadCount > -1 {
+                if self.uploadCount > 0 {
                     self.mutationNextStep = .s3Upload
                     self.performMutation()
                 } else {

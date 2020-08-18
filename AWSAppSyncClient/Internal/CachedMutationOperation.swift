@@ -15,7 +15,7 @@ final class CachedMutationOperation: AsynchronousOperation, Cancellable {
     var currentAttemptNumber = 1
     var mutationNextStep: MutationState = .unknown
     var mutationRetryNotifier: AWSMutationRetryNotifier?
-    private var uploadCount: Int = -1
+    private var uploadCount: Int = 0
 
     var operationCompletionBlock: ((CachedMutationOperation, Error?) -> Void)?
 
@@ -39,7 +39,7 @@ final class CachedMutationOperation: AsynchronousOperation, Cancellable {
     }
     
     private func resolveInitialMutationState() {
-        if mutation.s3ObjectInput != nil && self.uploadCount > -1 {
+        if mutation.s3ObjectInput != nil && self.uploadCount > 0 {
             mutationNextStep = .s3Upload
         } else {
             mutationNextStep = .graphqlOperation
@@ -67,7 +67,7 @@ final class CachedMutationOperation: AsynchronousOperation, Cancellable {
         }
         switch mutationNextStep {
         case .s3Upload:
-            guard mutation.s3ObjectInput != nil && self.uploadCount > -1 else {
+            guard mutation.s3ObjectInput != nil && self.uploadCount > 0 else {
                 self.mutationNextStep = .graphqlOperation
                 self.send(mutation, completion: completion)
                 return
@@ -75,7 +75,7 @@ final class CachedMutationOperation: AsynchronousOperation, Cancellable {
             appSyncClient.s3ObjectManager?.upload(s3Object: ((mutation.s3ObjectInput?[self.uploadCount])!)) { [weak self, mutation] success, error in
                 if success {
                     self?.uploadCount -= 1
-                    if self != nil, self!.uploadCount > -1 {
+                    if self != nil, self!.uploadCount > 0 {
                         self?.mutationNextStep = .s3Upload
                         self?.performMutation()
                     } else {
