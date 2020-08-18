@@ -69,7 +69,7 @@ final class SessionMutationOperation<Mutation: GraphQLMutation>: AsynchronousOpe
             print("Session Mutation Operation: \(identifier ?? "(unidentified)")\nSending upload \((s3Objects.count - self.uploadCount))/\(s3Objects.count)")
             
             appSyncClient.performS3ObjectUploadForMutation(operation: mutation,
-                                                           s3Object: s3Objects[self.uploadCount]) { (error) in
+                                                           s3Object: s3Objects[self.uploadCount - 1]) { (error) in
                                                             
             if let error = error, AWSMutationRetryAdviceHelper.isRetriableNetworkError(error: error) {
                 // If the error retriable, do not mark the operation as completed; schedule a retry.

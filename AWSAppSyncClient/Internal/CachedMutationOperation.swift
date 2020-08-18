@@ -72,7 +72,7 @@ final class CachedMutationOperation: AsynchronousOperation, Cancellable {
                 self.send(mutation, completion: completion)
                 return
             }
-            appSyncClient.s3ObjectManager?.upload(s3Object: ((mutation.s3ObjectInput?[self.uploadCount])!)) { [weak self, mutation] success, error in
+            appSyncClient.s3ObjectManager?.upload(s3Object: ((mutation.s3ObjectInput?[self.uploadCount - 1])!)) { [weak self, mutation] success, error in
                 if success {
                     self?.uploadCount -= 1
                     if self != nil, self!.uploadCount > 0 {
