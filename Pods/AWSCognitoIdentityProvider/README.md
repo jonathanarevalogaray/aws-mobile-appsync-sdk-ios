@@ -31,7 +31,7 @@ To get started with the AWS SDK for iOS, check out the [Developer Guide for iOS]
 To use the AWS SDK for iOS, you will need the following installed on your development machine:
 
 * Xcode 11.0 or later
-* Most SDKs require iOS 8 or later. AWSCognitoAuth, AWSMobileClient, and AWSTranscribeStreaming require iOS 9.
+* iOS 9 or later
 
 ## Include the SDK for iOS in an Existing Application
 
@@ -119,7 +119,7 @@ For a complete list of our pods, check out the .podspec files in the root direct
         Input Files: Empty
         Output Files: Empty
 
-> Note: Currently, the AWS SDK for iOS builds the Carthage binaries using Xcode 11.2.1. To consume the pre-built binaries your Xcode version needs to be the same, else you have to build the frameworks on your machine by passing `--no-use-binaries` flag to `carthage update` command.
+> Note: Currently, the AWS SDK for iOS builds the Carthage binaries using the latest released version of Xcode. To consume the pre-built binaries your Xcode version needs to be the same, else you have to build the frameworks on your machine by passing `--no-use-binaries` flag to `carthage update` command.
 
 ### Frameworks
 
@@ -208,7 +208,6 @@ When we release a new version of the SDK, you can pick up the changes as describ
     import AWSDynamoDB
     import AWSSQS
     import AWSSNS
-    import AWSCognito
     ```
         
 4. Make a call to the AWS services.
@@ -259,30 +258,26 @@ When we release a new version of the SDK, you can pick up the changes as describ
     @import AWSDynamoDB;
     @import AWSSQS;
     @import AWSSNS;
-    @import AWSCognito;
     ```
 
 4. Make a call to the AWS services.
 
     ```objective-c
-    AWSS3TransferManager *transferManager = [AWSS3TransferManager defaultS3TransferManager];
-    AWSS3TransferManagerUploadRequest *uploadRequest = [AWSS3TransferManagerUploadRequest new];
-    uploadRequest.bucket = yourBucket;
-    uploadRequest.key = yourKey;
-    uploadRequest.body = yourDataURL;
-    uploadRequest.contentLength = [NSNumber numberWithUnsignedLongLong:fileSize];
-    
-    [[transferManager upload:uploadRequest] continueWithBlock:^id(AWSTask *task) {
+    AWSSNS *sns = [AWSSNS defaultSNS];
+    AWSSNSListTopicsInput *listTopicsInput = [AWSSNSListTopicsInput new];
+    [[sns listTopics:listTopicsInput] continueWithBlock:^id(AWSTask *task) {
         // Do something with the response
         return nil;
     }];
     ```
 
-**Note**: Most of the service client classes have a singleton method to get a default client. The naming convention is `+ defaultSERVICENAME` (e.g. `+ defaultS3TransferManager` in the above code snippet). This singleton method creates a service client with `defaultServiceConfiguration`, which you set up in step 5, and maintains a strong reference to the client.
+**Note**: Most of the service client classes have a singleton method to get a default client. The naming convention is `+ defaultSERVICENAME` (e.g. `+ defaultS3SNS` in the above code snippet). This singleton method creates a service client with `defaultServiceConfiguration`, which you set up in step 5, and maintains a strong reference to the client.
 
-## AWSTask
+## Working with AWSTask
 
-With native AWSTask support in the SDK for iOS, you can chain async requests instead of nesting them. It makes the logic cleaner, while keeping the code more readable. Read [Working with AWSTask](http://docs.aws.amazon.com/mobile/sdkforios/developerguide/awstask.html) to learn how to use AWSTask.
+The SDK returns `AWSTask` objects when operating on asynchronous operations to avoid blocking the UI thread.
+
+The AWSTask class is a renamed version of BFTask from the Bolts framework. For complete documentation on Bolts, see the [Bolts-iOS repo](https://github.com/BoltsFramework/Bolts-ObjC)
 
 ## Logging
 
@@ -353,7 +348,7 @@ To initialize logging to your Xcode console, use the following code:
 **Swift**
 
 ```swift
-AWSDDLog.add(AWSDDTTYLogger.sharedInstance()) // TTY = Xcode console
+AWSDDLog.add(AWSDDTTYLogger.sharedInstance) // TTY = Xcode console
 ```
 
 **Objective-C**

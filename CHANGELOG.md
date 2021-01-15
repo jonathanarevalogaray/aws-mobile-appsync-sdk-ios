@@ -3,6 +3,77 @@
 The AWS AppSync SDK for iOS enables you to access your AWS AppSync backend and perform operations like `Queries`, `Mutations` and `Subscriptions`. The SDK
 also includes support for offline operations.
 
+## Unreleased
+
+*Changes merged to `main`, but not yet released on a tag.*
+
+## 3.1.14
+
+### Misc. Updates
+
+- Update dependencies ([PR #451](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/451))
+
+## 3.1.13
+
+### Misc. Updates
+
+- Update dependencies. ([PR #445](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/445))
+
+## 3.1.12
+
+### Misc. Updates
+
+- Add a parameter for the api key expiration for integ test setup CFN template ([PR #439](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/439))
+- Update dependencies. ([PR #441](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/441))
+
+## 3.1.11
+
+### Misc. Updates
+
+- Refactored `AWSAppSyncHTTPNetworkTransport` to simplify internal auth handling, and to support providing your own `URLSession` in the new initializer. ([PR #422](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/422)). Thanks for the initial PR, @lesmuc! 🎉
+- Update dependencies. ([PR #436](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/436))
+
+## 3.1.10
+
+### Misc. Updates
+
+- Update dependencies. ([PR #432](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/432))
+
+## 3.1.9
+
+## Misc. Updates
+
+- Fix Carthage build [PR #423](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/423)
+- Support Xcode 12 [PR #419](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/419)
+- Fix dependency version in podspec [PR #428](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/428)
+
+## 3.1.8
+
+### Deprecated release
+This release is deprecated due to errors. Please use 3.1.9 or greater.
+
+## 3.1.7
+
+### Deprecated release
+This release is deprecated due to errors. Please use 3.1.8 or greater.
+
+## 3.1.6
+
+### Misc. Updates
+
+- Upgrade to 2.16.0 SDK. [PR #410](https://github.com/awslabs/aws-mobile-appsync-sdk-ios/pull/410)
+
+## 3.1.5
+
+### Bug Fixes
+
+- Fix bug in subscription where data is not translated correctly to a format valid for JSONSerialization (See Issue #401, PR #402). Thanks @LachlanMcCulloch! 🎉
+
+### Misc. Updates
+
+- Updated to latest dependencies
+- AppSync is now built with Xcode 11.6 in the CI/CD pipeline
+
 ## 3.1.4
 
 ### Bug Fixes
