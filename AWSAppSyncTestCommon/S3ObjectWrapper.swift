@@ -27,7 +27,7 @@ extension S3ObjectInput: AWSS3ObjectProtocol {
 /// to be discovered and automatically uploaded in a mutation.
 extension S3ObjectInput: AWSS3InputObjectProtocol {
     public func getLocalSourceFileURL() -> URL? {
-        return URL(string: localUri)
+        return URL(fileURLWithPath: localUri)
     }
 
     public func getMimeType() -> String {

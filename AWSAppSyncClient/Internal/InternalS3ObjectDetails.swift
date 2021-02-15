@@ -25,7 +25,7 @@ struct InternalS3ObjectDetails: AWSS3InputObjectProtocol, AWSS3ObjectProtocol {
     // MARK: - AWSS3InputObjectProtocol
 
     func getLocalSourceFileURL() -> URL? {
-        return URL(string: localUri)
+        return URL(fileURLWithPath: localUri)
     }
 
     func getMimeType() -> String {
